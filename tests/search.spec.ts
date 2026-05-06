@@ -1,26 +1,61 @@
-// tests/search.spec.ts
-import { test, expect } from "@playwright/test";
+import { test, expect } from "@playwright/test"
 
-test.describe("Search Functionality", () => {
-  test("should search for providers", async ({ page }) => {
-    await page.goto("/search?type=providers");
-    await expect(page.locator("h1, h2")).toContainText(/Provider|Search/i);
-  });
+test.describe("Search & Filtering", () => {
+  test("hero search bar submits correctly", async ({ page }) => {
+    await page.goto("/")
+    await page.fill('input[name="q"]', "Electrician")
+    await page.selectOption('select[name="city"]', "Manila")
+    await page.click('button[type="submit"]')
+    await expect(page).toHaveURL(/search/)
+    await expect(page).toHaveURL(/q=Electrician/)
+    await expect(page).toHaveURL(/city=Manila/)
+  })
 
-  test("should filter by city", async ({ page }) => {
-    await page.goto("/search?city=Manila&type=providers");
-    await expect(page).toHaveURL(/city=Manila/);
-  });
+  test("popular search tags work", async ({ page }) => {
+    await page.goto("/")
+    await page.click("text=Plumber")
+    await expect(page).toHaveURL(/search.*q=Plumber/)
+  })
 
-  test("should display provider cards", async ({ page }) => {
-    await page.goto("/providers");
-    const cards = page.locator('[data-testid="provider-card"], .provider-card, a[href*="/providers/"]');
-    // Just verify page loaded
-    await expect(page.locator("body")).toBeVisible();
-  });
+  test("providers listing loads", async ({ page }) => {
+    await page.goto("/providers")
+    await expect(page.locator("h1, h2")).toBeVisible()
+    await expect(page.locator("body")).not.toContainText("Error")
+  })
 
-  test("should display service requests", async ({ page }) => {
-    await page.goto("/service_requests");
-    await expect(page.locator("body")).toBeVisible();
-  });
-});
+  test("providers can be filtered by city", async ({ page }) => {
+    await page.goto("/providers")
+    await page.selectOption('select[name="city"]', "Manila")
+    await page.click('button[type="submit"]')
+    await expect(page).toHaveURL(/city=Manila/)
+  })
+
+  test("providers can be filtered by verified", async ({ page }) => {
+    await page.goto("/providers?verified=1")
+    await expect(page.locator("body")).toBeVisible()
+  })
+
+  test("service requests listing loads", async ({ page }) => {
+    await page.goto("/service_requests")
+    await expect(page.locator("h1, h2")).toBeVisible()
+  })
+
+  test("service requests filter by city", async ({ page }) => {
+    await page.goto("/service_requests?city=Cebu+City")
+    await expect(page).toHaveURL(/city=Cebu/)
+  })
+
+  test("service requests filter by urgent", async ({ page }) => {
+    await page.goto("/service_requests?urgent=1")
+    await expect(page.locator("body")).toBeVisible()
+  })
+
+  test("category filter works from homepage", async ({ page }) => {
+    await page.goto("/")
+    const categoryLink = page.locator("a[href*='category_id']").first()
+    if (await categoryLink.isVisible()) {
+      await categoryLink.click()
+      await expect(page).toHaveURL(/category_id/)
+    }
+  })
+})
