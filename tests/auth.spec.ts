@@ -63,15 +63,15 @@ test.describe("Sign In Page", () => {
 
     const passwordForm = page.locator("form").nth(1)
     await expect(passwordForm.getByRole("button", { name: /^Sign In$/i })).toBeVisible()
-    await expect(passwordForm.getByLabel("Password")).toBeVisible()
+    await expect(passwordForm.getByLabel("Password", { exact: true })).toBeVisible()
   })
 
   test("password form shows email and password fields", async ({ page }) => {
     await page.goto("/users/sign_in")
 
     const passwordForm = page.locator("form").nth(1)
-    await expect(passwordForm.getByLabel("Email")).toBeVisible()
-    await expect(passwordForm.getByLabel("Password")).toBeVisible()
+    await expect(passwordForm.locator('input[name="user[email]"]')).toBeVisible()
+    await expect(passwordForm.locator('input[name="user[password]"]')).toBeVisible()
   })
 
   test("magic link form shows the email-only flow", async ({ page }) => {
@@ -93,7 +93,7 @@ test.describe("Sign In Page", () => {
     await page.goto("/users/sign_in")
 
     const magicLinkForm = page.locator("form").first()
-    await magicLinkForm.fill('input[name="user[email]"]', "customer1@kumpunihomes.com")
+    await magicLinkForm.locator('input[name="user[email]"]').fill("customer1@kumpunihomes.com")
     await magicLinkForm.getByRole("button", { name: /Send Magic Link/i }).click()
     // Devise responds with a generic flash regardless of whether the email exists
     await expect(page.locator("body")).toBeVisible()
@@ -107,9 +107,11 @@ test.describe("Registration (role cards)", () => {
     await expect(page.locator("h1")).toContainText("Create your account")
     await expect(page.locator('input[name="user[role]"][value="customer"]')).toBeAttached()
     await expect(page.locator('input[name="user[role]"][value="provider"]')).toBeAttached()
-    await expect(page.locator('input[name="user[email]"]')).toBeVisible()
-    await expect(page.locator('input[name="user[password]"]')).toBeVisible()
-    await expect(page.locator('input[name="user[password_confirmation]"]')).toBeVisible()
+    await expect(page.getByText("Customer", { exact: true })).toBeVisible()
+    await expect(page.getByText("Provider", { exact: true })).toBeVisible()
+    await expect(page.getByLabel("Email address")).toBeVisible()
+    await expect(page.getByLabel("Password", { exact: true })).toBeVisible()
+    await expect(page.getByLabel("Confirm Password")).toBeVisible()
   })
 
   test("customer sign-up redirects to confirmation-pending", async ({ page }) => {
@@ -133,26 +135,27 @@ test.describe("Registration (role cards)", () => {
 
   test("sign-up link and sign-in link cross-reference each other", async ({ page }) => {
     await page.goto("/users/sign_up")
-    await expect(page.getByRole("link", { name: /Sign in/i })).toBeVisible()
+    await expect(page.locator('main').getByRole("link", { name: /Sign in/i })).toBeVisible()
     await page.goto("/users/sign_in")
     await expect(page.getByRole("link", { name: /Create (one|account)/i })).toBeVisible()
   })
 })
 
 test.describe("Sign In / Sign Out (seeded, confirmed accounts)", () => {
-  test("password sign-in with valid credentials reaches dashboard", async ({ page }) => {
+  test("password sign-in with valid credentials reaches the home page", async ({ page }) => {
     await signIn(page, "customer1@kumpunihomes.com", "Password123!")
-    await expect(page).toHaveURL(/dashboard/)
+    await expect(page).toHaveURL(/\/$/)
     await expect(page.locator("nav")).toContainText(/Welcome|customer1|Juan|Maria/i)
   })
 
   test("password sign-in fails with a wrong password", async ({ page }) => {
     await page.goto("/users/sign_in")
-    await page.getByRole("button", { name: /Password/i }).click()
-    await page.fill('input[name="user[email]"]', "customer1@kumpunihomes.com")
-    await page.fill('input[name="user[password]"]', "WrongPassword!")
-    await page.getByRole("button", { name: /^Sign In$/ }).click()
-    await expect(page.locator(".alert, [role='alert'], #error_explanation")).toBeVisible()
+    const passwordForm = page.locator("form").nth(1)
+    await passwordForm.locator('input[name="user[email]"]').fill("customer1@kumpunihomes.com")
+    await passwordForm.locator('input[name="user[password]"]').fill("WrongPassword!")
+    await passwordForm.getByRole("button", { name: /^Sign In$/ }).click()
+    // Layout renders flash messages inside elements with data-controller="flash"
+    await expect(page.locator('[data-controller="flash"]')).toBeVisible()
     await expect(page).not.toHaveURL(/dashboard/)
   })
 
@@ -160,13 +163,13 @@ test.describe("Sign In / Sign Out (seeded, confirmed accounts)", () => {
     await signIn(page, "customer1@kumpunihomes.com", "Password123!")
     await signOut(page)
     await expect(page).toHaveURL(/\/$/)
-    await expect(page.getByRole("link", { name: "Sign In" })).toBeVisible()
+    await expect(page.locator('nav').getByRole("link", { name: "Sign In" })).toBeVisible()
   })
 
   test("profile menu shows the correct role badge", async ({ page }) => {
     await signIn(page, "provider1@kumpunihomes.com", "Password123!")
-    await page.locator('[data-controller="dropdown"] button').last().click()
-    await expect(page.getByText("provider", { exact: false })).toBeVisible()
+    await page.locator('[data-controller="dropdown"]').nth(1).locator('button[data-action="click->dropdown#toggle"]').first().click()
+    await expect(page.getByText("provider profile", { exact: false })).toBeVisible()
   })
 })
 

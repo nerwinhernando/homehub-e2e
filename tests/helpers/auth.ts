@@ -23,11 +23,11 @@ export async function signIn(page: Page, email: string, password: string) {
   await page.goto("/users/sign_in")
 
   const passwordForm = page.locator("form").nth(1)
-  await passwordForm.fill('input[name="user[email]"]', email)
-  await passwordForm.fill('input[name="user[password]"]', password)
+  await passwordForm.locator('input[name="user[email]"]').fill(email)
+  await passwordForm.locator('input[name="user[password]"]').fill(password)
   await passwordForm.getByRole("button", { name: /^Sign In$/ }).click()
 
-  await page.waitForURL(/dashboard/)
+  await page.waitForURL(/\/$/)
 }
 
 /** Request a magic link for the given email via the email-link form. */
@@ -35,7 +35,7 @@ export async function requestMagicLink(page: Page, email: string) {
   await page.goto("/users/sign_in")
 
   const magicForm = page.locator("form").first()
-  await magicForm.fill('input[name="user[email]"]', email)
+  await magicForm.locator('input[name="user[email]"]').fill(email)
   await magicForm.getByRole("button", { name: /Send Magic Link/i }).click()
 }
 
@@ -48,10 +48,10 @@ export async function signUp(page: Page, opts: SignUpOptions) {
   await page.goto("/users/sign_up")
 
   if (opts.role === "provider") {
-    // Role cards are label-wrapped radios; check the underlying input.
-    await page.check('input[name="user[role]"][value="provider"]', { force: true })
+    // Role cards are label-wrapped radios; click the visible card label.
+    await page.locator('label:has-text("Provider")').click()
   } else {
-    await page.check('input[name="user[role]"][value="customer"]', { force: true })
+    await page.locator('label:has-text("Customer")').click()
   }
 
   await page.fill('input[name="user[first_name]"]', opts.firstName)
@@ -66,8 +66,8 @@ export async function signUp(page: Page, opts: SignUpOptions) {
 
 /** Open the profile dropdown and sign out. Waits for the landing page. */
 export async function signOut(page: Page) {
-  // The profile dropdown is the last dropdown in the navbar (notifications is first).
-  await page.locator('[data-controller="dropdown"] button').last().click()
+  // Profile dropdown is the second dropdown controller in the navbar.
+  await page.locator('[data-controller="dropdown"]').nth(1).locator('button[data-action="click->dropdown#toggle"]').first().click()
   await page.getByRole("button", { name: /Sign Out/i }).click()
   await page.waitForURL(/\/$/)
 }
