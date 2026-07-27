@@ -3,7 +3,7 @@ import { signIn } from "./helpers/auth"
 
 test.describe("Service Request Flows", () => {
   test.beforeEach(async ({ page }) => {
-    await signIn(page, "customer1@example.com", "Password123!")
+    await signIn(page, "customer1@kumpunihomes.com", "Password123!")
   })
 
   test("customer can navigate to new request form", async ({ page }) => {
@@ -33,13 +33,17 @@ test.describe("Service Request Flows", () => {
     await page.fill('input[name="service_request[budget_min]"]', "3000")
     await page.fill('input[name="service_request[budget_max]"]', "8000")
     await page.click('input[type="submit"]')
-    await expect(page.locator(".notice, .flash-success")).toBeVisible()
+    await expect(page.locator('[data-controller="flash"]')).toBeVisible()
   })
 
   test("service request validation shows errors", async ({ page }) => {
     await page.goto("/service_requests/new")
     await page.click('input[type="submit"]')
-    await expect(page.locator("#error_explanation, .error, [data-error]")).toBeVisible()
+    await expect(page.getByText(/errors prevented this from being saved/i)).toBeVisible()
+    await expect(page.getByText(/Category must exist/i)).toBeVisible()
+    await expect(page.getByText(/Title can't be blank/i)).toBeVisible()
+    await expect(page.getByText(/Description can't be blank/i)).toBeVisible()
+    await expect(page.getByText(/City can't be blank/i)).toBeVisible()
   })
 
   test("service request show page has correct sections", async ({ page }) => {
@@ -66,7 +70,8 @@ test.describe("Service Request Flows", () => {
   })
 
   test("post request CTA visible in navbar profile menu", async ({ page }) => {
-    await page.click('[data-controller="dropdown"] button')
-    await expect(page.locator("text=Post a Request")).toBeVisible()
+    const profileMenu = page.locator('[data-controller="dropdown"]').nth(1).locator('[data-dropdown-target="menu"]')
+    await page.locator('[data-controller="dropdown"]').nth(1).locator('button[data-action="click->dropdown#toggle"]').first().click()
+    await expect(profileMenu.getByRole("link", { name: "Post a Request" })).toBeVisible()
   })
 })
