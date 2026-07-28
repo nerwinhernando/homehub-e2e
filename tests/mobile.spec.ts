@@ -20,12 +20,14 @@ test.describe("Mobile Responsiveness", () => {
 
   test("mobile sign in form is usable", async ({ page }) => {
     await page.goto("/users/sign_in")
-    await expect(page.locator('input[name="user[email]"]')).toBeVisible()
-    await expect(page.locator('input[name="user[password]"]')).toBeVisible()
+    const passwordForm = page.locator("form").nth(1)
+    await expect(passwordForm).toBeVisible()
+    await expect(passwordForm.locator('input[name="user[email]"]')).toBeVisible()
+    await expect(passwordForm.locator('input[name="user[password]"]')).toBeVisible()
   })
 
   test("dashboard is accessible on mobile", async ({ page }) => {
-    await signIn(page, "customer1@example.com", "Password123!")
+    await signIn(page, "customer1@kumpunihomes.com", "Password123!")
     await expect(page.locator("body")).toBeVisible()
     await expect(page.locator("nav")).toBeVisible()
   })
