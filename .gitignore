@@ -18,3 +18,6 @@ yarn-error.log*
 # IDE settings
 .vscode/
 .idea/
+
+# playwright cli
+.playwright-cli/
